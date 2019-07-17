@@ -48,7 +48,10 @@ public class SqlTableWrapper<T extends ObjectId> {
         var propNames = new StringBuilder();
         var values = new StringBuilder("(");
         var firstPassed = false;
-        var listOPropNames = getFields(typeInfo).filter(f -> !f.getName().equalsIgnoreCase("id")).map(Field::getName).collect(Collectors.toList());
+        var listOPropNames = getFields(typeInfo)
+                .filter(f -> !f.getName().equalsIgnoreCase("id"))
+                .map(Field::getName)
+                .collect(Collectors.toList());
         for (var propName : listOPropNames) {
             propNames.append(firstPassed ? "," : "").append(propName);
             values.append(firstPassed ? "," : "").append("?");
