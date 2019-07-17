@@ -21,6 +21,7 @@ public class SqlTableWrapper<T extends ObjectId> {
     private String selectTemplate;
     private String selectSomeTemplate;
     private String selectOneTemplate;
+    private String joinOnIDTemplate;
     private Class<? extends ObjectId> typeInfo;
     private String selectSpecificTemplate;
     private String countTemplate;
@@ -97,6 +98,14 @@ public class SqlTableWrapper<T extends ObjectId> {
         //crafting the template so that we can count indexes in a table.
         countTemplate = String.format("SELECT COUNT(id) FROM %s", getTableName());
 
+        var annotation = getFields(typeInfo);
+        joinOnIDTemplate = String.format("SELECT %s FROM %s as %s1 INNER JOIN %s as %s2 ON %s1.%s = %s2.id", propNameString, getTableName(), getTableName() );
+        /*
+         * Base join statement:
+         * SELECT %s FROM %s as %s1
+         * INNER JOIN %s as %s2
+         * ON %s1.COLUMN = %s2.id
+         */
     }
 
     private void setConnection(Connection connection) {
@@ -291,4 +300,3 @@ public class SqlTableWrapper<T extends ObjectId> {
         return id;
     }
 }
-
