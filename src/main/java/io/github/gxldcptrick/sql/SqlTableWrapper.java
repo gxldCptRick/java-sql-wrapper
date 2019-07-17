@@ -9,6 +9,7 @@ import java.lang.reflect.Method;
 import java.sql.*;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +25,7 @@ public class SqlTableWrapper<T extends ObjectId> {
     private Class<? extends ObjectId> typeInfo;
     private String selectSpecificTemplate;
     private String countTemplate;
+    private String builde;
 
     public SqlTableWrapper(Class<? extends ObjectId> typeInfo, Connection connection, String tableName) {
         setConnection(connection);
@@ -45,19 +47,19 @@ public class SqlTableWrapper<T extends ObjectId> {
     private void createTemplates(Class<?> typeInfo) {
         //crafting the inserting template
         var props = new StringBuilder("(");
-        var propNames = new StringBuilder();
+        var propNames = createPropNames(typeInfo);
         var values = new StringBuilder("(");
         var firstPassed = false;
         var listOPropNames = getFields(typeInfo)
                 .filter(f -> !f.getName().equalsIgnoreCase("id"))
-                .map(Field::getName)
                 .collect(Collectors.toList());
-        for (var propName : listOPropNames) {
-            propNames.append(firstPassed ? "," : "").append(propName);
+        for (var ignored : listOPropNames) {
             values.append(firstPassed ? "," : "").append("?");
             firstPassed = true;
         }
-        props.append(propNames.toString());
+
+
+        props.append(propNames);
         props.append(")");
         values.append(")");
         insertTemplate = String.format("INSERT INTO %s %s VALUES %s", getTableName(), props, values);
@@ -74,14 +76,13 @@ public class SqlTableWrapper<T extends ObjectId> {
         updateBuilder.append("WHERE id=?");
         updateTemplate = updateBuilder.toString();
 
-
         //crafting the delete statement from scratch hardest one to do yet oof big oof biggest oof
         deleteTemplate = String.format("DELETE FROM %s WHERE id = ?", getTableName());
 
-        propNames.append(", id");
+        propNames = propNames.concat(", id");
 
         //crafting the simplest of them all the select all.
-        var propNameString = propNames.toString();
+        var propNameString = propNames;
         selectTemplate = String.format("SELECT %s FROM %s", propNameString, getTableName());
 
         //crafting the complex select some template no joke this was actually tricky to get right.
@@ -97,6 +98,15 @@ public class SqlTableWrapper<T extends ObjectId> {
         //crafting the template so that we can count indexes in a table.
         countTemplate = String.format("SELECT COUNT(id) FROM %s", getTableName());
 
+    }
+
+    private String createPropNames(Class<?> typeInfo) {
+        return getFields(typeInfo)
+                .map(Field::getName)
+                .filter((c) -> !c.equals("id"))
+                .map((c) -> typeInfo.getName().concat(".").concat(c))
+                .reduce((agg, next) -> agg + ", " + next)
+                .orElse("");
     }
 
     private void setConnection(Connection connection) {
@@ -171,15 +181,15 @@ public class SqlTableWrapper<T extends ObjectId> {
         return builder.build();
     }
 
-    public T getById(int id) throws SQLException{
+    public T getById(int id) throws SQLException {
         T result = null;
-        try(var preparedStatement = connection.prepareStatement(selectOneTemplate)){
+        try (var preparedStatement = connection.prepareStatement(selectOneTemplate)) {
             preparedStatement.setInt(1, id);
-            try(var query = preparedStatement.executeQuery()){
-                while(query.next()){
-                    if(result == null){
+            try (var query = preparedStatement.executeQuery()) {
+                while (query.next()) {
+                    if (result == null) {
                         result = convertRowToObject(query);
-                    }else{
+                    } else {
                         throw new IllegalArgumentException("There was more than one record returned");
                     }
                 }
@@ -196,6 +206,8 @@ public class SqlTableWrapper<T extends ObjectId> {
             preparedStatement.setInt(index, (int) value);
         } else if (type.equals(String.class)) {
             preparedStatement.setString(index, (String) value);
+        } else if(type.equals(long.class)){
+            preparedStatement.setLong(index, (long) value);
         } else {
             throw new IllegalArgumentException("The Type cannot be easily converted to sql so.. FUCKING BAIL!!");
         }
@@ -235,20 +247,21 @@ public class SqlTableWrapper<T extends ObjectId> {
     private void setValueToFieldFromRow(ResultSet row, T instance, Field field) throws SQLException {
         var fieldType = field.getType();
         var method = getMethodFromInstance(instance, field, "set");
+        Object value;
         if (fieldType.equals(int.class)) {
-            try {
-                method.invoke(instance, row.getInt(field.getName()));
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
-            }
+            value = row.getInt(field.getName());
         } else if (fieldType.equals(String.class)) {
-            try {
-                method.invoke(instance, row.getString(field.getName()));
-            } catch (IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
-            }
+            value = row.getString(field.getName());
+        } else if (fieldType.equals(long.class)) {
+            value = row.getLong(field.getName());
         } else {
             throw new IllegalArgumentException("I don't know what you are so... BAIL FUCKING BAIL!!.");
+        }
+
+        try {
+            method.invoke(instance, value);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            e.printStackTrace();
         }
     }
 
@@ -263,10 +276,10 @@ public class SqlTableWrapper<T extends ObjectId> {
     }
 
     public int count() throws SQLException {
-        var count  = 0;
-        try(var statement = connection.prepareStatement(countTemplate)){
-            try(var result = statement.executeQuery()){
-                while(result.next()){
+        var count = 0;
+        try (var statement = connection.prepareStatement(countTemplate)) {
+            try (var result = statement.executeQuery()) {
+                while (result.next()) {
                     count = result.getInt(1);
                 }
             }
@@ -277,13 +290,13 @@ public class SqlTableWrapper<T extends ObjectId> {
     public int getIdFor(T contact) throws SQLException {
         var id = -1;
         var fields = getFields(contact.getClass()).filter(f -> !f.getName().equalsIgnoreCase("id")).collect(Collectors.toList());
-        try(var preparedStatement = connection.prepareStatement(this.selectSpecificTemplate)){
+        try (var preparedStatement = connection.prepareStatement(this.selectSpecificTemplate)) {
             for (int i = 0; i < fields.size(); i++) {
                 prepareStatementPropertyAtGivenIndex(i, fields.get(i), contact, preparedStatement);
             }
-            try(var query = preparedStatement.executeQuery()){
-                if(query.next()){
-                    var obj =  convertRowToObject(query);
+            try (var query = preparedStatement.executeQuery()) {
+                if (query.next()) {
+                    var obj = convertRowToObject(query);
                     id = obj.getId();
                 }
             }
