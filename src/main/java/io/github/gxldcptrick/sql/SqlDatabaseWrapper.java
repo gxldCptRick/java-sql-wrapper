@@ -8,20 +8,19 @@ import java.sql.SQLException;
 import java.util.Map;
 
 public class SqlDatabaseWrapper implements AutoCloseable {
-    private Map<String, SqlTableWrapper<?>> tables;
-    private Connection connection;
-    public SqlDatabaseWrapper(String connectionString, LoginInfo dbLogin){
+	private Map<String, SqlTableWrapper<?>> tables;
+	private Connection connection;
 
-    }
-    public void addTable(String tableName, Class<? extends ObjectId> type){
-<<<<<<< HEAD
-    	
-=======
-    }
+	public SqlDatabaseWrapper(String connectionString, LoginInfo dbLogin) {
 
-    @Override
-    public void close() throws SQLException {
-        connection.close();
->>>>>>> c6a4bd11756a186826700e4b2cd4ae247b163cb9
-    }
+	}
+
+	public void addTable(String tableName, Class<? extends ObjectId> type) {
+		tables.put(tableName, new SqlTableWrapper<ObjectId>(type, connection, tableName));
+	}
+
+	@Override
+	public void close() throws SQLException {
+
+	}
 }
