@@ -13,6 +13,6 @@ public class SqlDatabaseWrapper {
 
     }
     public void addTable(String tableName, Class<? extends ObjectId> type){
-
+    	
     }
 }
