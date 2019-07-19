@@ -12,11 +12,10 @@ public class SqlDatabaseWrapper implements AutoCloseable {
 	private Connection connection;
 
 	public SqlDatabaseWrapper(String connectionString, LoginInfo dbLogin) {
-
 	}
 
-	public void addTable(String tableName, Class<? extends ObjectId> type) {
-		tables.put(tableName, new SqlTableWrapper<ObjectId>(type, connection, tableName));
+	public <T extends ObjectId> void addTable(String tableName, Class<? extends ObjectId> type) {
+		tables.put(tableName, new SqlTableWrapper<T>(type, connection, tableName));
 	}
 
 	@Override
