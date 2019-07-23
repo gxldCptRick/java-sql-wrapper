@@ -63,7 +63,7 @@ public class SqlTableWrapper<T extends ObjectId> {
         props.append(propNames);
         props.append(")");
         values.append(")");
-        insertTemplate = String.format("INSERT INTO %s %s VALUES %s", getTableName(), props, values);
+        insertTemplate = String.format("INSERT INTO %s %s VALUES %s;", getTableName(), props, values);
 
         //crafting the update template im actually going to cry out of pain.. WHY GOD WHY!!
         var updateBuilder = new StringBuilder(String.format("UPDATE %s SET ", getTableName()));
@@ -74,46 +74,46 @@ public class SqlTableWrapper<T extends ObjectId> {
             firstPassed = true;
         }
         updateBuilder.append(settingBuilder);
-        updateBuilder.append("WHERE id=?");
+        updateBuilder.append("WHERE id=?;");
         updateTemplate = updateBuilder.toString();
 
         //crafting the delete statement from scratch hardest one to do yet oof big oof biggest oof
-        deleteTemplate = String.format("DELETE FROM %s WHERE id = ?", getTableName());
+        deleteTemplate = String.format("DELETE FROM %s WHERE id = ?;", getTableName());
 
         propNames = propNames.concat(", id");
 
         //crafting the simplest of them all the select all.
         var propNameString = propNames;
-        selectTemplate = String.format("SELECT %s FROM %s", propNameString, getTableName());
+        selectTemplate = String.format("SELECT %s FROM %s;", propNameString, getTableName());
 
         //crafting the complex select some template no joke this was actually tricky to get right.
-        var subQuery = String.format("SELECT TOP(?) id FROM %s ORDER BY id", getTableName());
-        selectSomeTemplate = String.format("SELECT TOP(?) %s FROM %s WHERE id NOT IN (%s) ORDER BY id", propNameString, getTableName(), subQuery);
+        var subQuery = String.format("SELECT TOP(?) id FROM %s ORDER BY id;", getTableName());
+        selectSomeTemplate = String.format("SELECT TOP(?) %s FROM %s WHERE id NOT IN (%s) ORDER BY id;", propNameString, getTableName(), subQuery);
 
         //crafting the simple select one query so that we can get a single record out.
-        selectOneTemplate = String.format("Select %s FROM %s WHERE id=?", propNameString, getTableName());
+        selectOneTemplate = String.format("Select %s FROM %s WHERE id=?;", propNameString, getTableName());
 
         //crafting the specific query so that we can find a contact in the database with the name email etc..
-        selectSpecificTemplate = String.format("SELECT %s FROM %s WHERE %s", propNames, getTableName(), settingBuilder.toString());
+        selectSpecificTemplate = String.format("SELECT %s FROM %s WHERE %s;", propNames, getTableName(), settingBuilder.toString());
 
         //crafting the template so that we can count indexes in a table.
-        countTemplate = String.format("SELECT COUNT(id) FROM %s", getTableName());
+        countTemplate = String.format("SELECT COUNT(id) FROM %s;", getTableName());
 
-        var annotation = getFields(typeInfo);
-        joinOnIDTemplate = String.format("SELECT %s FROM %s as %s1 INNER JOIN %s as %s2 ON %s1.%s = %s2.id", propNameString, getTableName(), getTableName() );
+//        var annotation = getFields(typeInfo);
+//        joinOnIDTemplate = String.format("SELECT %s FROM %s as %s1 INNER JOIN %s as %s2 ON %s1.%s = %s2.id", propNameString, getTableName(), getTableName() );
         /*
          * Base join statement:
          * SELECT %s FROM %s as %s1
          * INNER JOIN %s as %s2
          * ON %s1.COLUMN = %s2.id
          */
+        System.out.println(selectTemplate);
     }
 
     private String createPropNames(Class<?> typeInfo) {
         return getFields(typeInfo)
                 .map(Field::getName)
                 .filter((c) -> !c.equals("id"))
-                .map((c) -> typeInfo.getName().concat(".").concat(c))
                 .reduce((agg, next) -> agg + ", " + next)
                 .orElse("");
     }
