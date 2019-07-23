@@ -219,7 +219,7 @@ public class SqlTableWrapper<T extends ObjectId> {
 			preparedStatement.setString(index, (String) value);
 		} else if (type.equals(long.class)) {
 			preparedStatement.setLong(index, (long) value);
-		} else if (type.equals(Double.class)) {
+		} else if (type.equals(double.class)) {
 			preparedStatement.setDouble(index, (double) value);
 		} else {
 			throw new IllegalArgumentException("The Type cannot be easily converted to sql so.. FUCKING BAIL!!");
@@ -268,6 +268,8 @@ public class SqlTableWrapper<T extends ObjectId> {
 			value = row.getString(field.getName());
 		} else if (fieldType.equals(long.class)) {
 			value = row.getLong(field.getName());
+		} else if (fieldType.equals(double.class)) {
+			value = row.getDouble(field.getName());
 		} else {
 			throw new IllegalArgumentException("I don't know what you are so... BAIL FUCKING BAIL!!.");
 		}
