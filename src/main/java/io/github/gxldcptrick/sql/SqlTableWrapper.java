@@ -51,8 +51,10 @@ public class SqlTableWrapper<T extends ObjectId> {
 		var propNames = createPropNames(typeInfo);
 		var values = new StringBuilder("(");
 		var firstPassed = false;
-		var listOPropNames = getFields(typeInfo).filter(f -> !f.getName().equalsIgnoreCase("id"))
+		var listOPropNames = getFields(typeInfo).map(Field::getName).filter((c) -> !c.equals("id"))
 				.collect(Collectors.toList());
+//		var listOPropNames = getFields(typeInfo).filter(f -> !f.getName().equalsIgnoreCase("id"))
+//				.collect(Collectors.toList());
 		for (var ignored : listOPropNames) {
 			values.append(firstPassed ? "," : "").append("?");
 			firstPassed = true;
@@ -69,7 +71,7 @@ public class SqlTableWrapper<T extends ObjectId> {
 		var settingBuilder = new StringBuilder();
 		firstPassed = false;
 		for (var propName : listOPropNames) {
-			settingBuilder.append(firstPassed ? "," : "").append(propName).append("=? ");
+			settingBuilder.append(firstPassed ? " and " : "").append(propName).append("=? ");
 			firstPassed = true;
 		}
 		updateBuilder.append(settingBuilder);
@@ -208,8 +210,7 @@ public class SqlTableWrapper<T extends ObjectId> {
 		return result;
 	}
 
-	private void prepareStatementPropertyAtGivenIndex(int index, Field field, T instance,
-			PreparedStatement preparedStatement) throws SQLException {
+	private void prepareStatementPropertyAtGivenIndex(int index, Field field, T instance, PreparedStatement preparedStatement) throws SQLException {
 		var type = field.getType();
 		var getterMethod = getMethodFromInstance(instance, field, "get");
 		var value = invokeGetterOnInstance(instance, getterMethod);
@@ -309,8 +310,8 @@ public class SqlTableWrapper<T extends ObjectId> {
 		var fields = getFields(contact.getClass()).filter(f -> !f.getName().equalsIgnoreCase("id"))
 				.collect(Collectors.toList());
 		try (var preparedStatement = connection.prepareStatement(this.selectSpecificTemplate)) {
-			for (int i = 0; i < fields.size(); i++) {
-				prepareStatementPropertyAtGivenIndex(i, fields.get(i), contact, preparedStatement);
+			for (int i = 1; i < fields.size() + 1; i++) {
+				prepareStatementPropertyAtGivenIndex(i, fields.get(i - 1), contact, preparedStatement);
 			}
 			try (var query = preparedStatement.executeQuery()) {
 				if (query.next()) {
