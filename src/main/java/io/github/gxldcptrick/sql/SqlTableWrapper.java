@@ -69,9 +69,11 @@ public class SqlTableWrapper<T extends ObjectId> {
 		// WHY!!
 		var updateBuilder = new StringBuilder(String.format("UPDATE %s SET ", getTableName()));
 		var settingBuilder = new StringBuilder();
+		var whereClause = new StringBuilder();
 		firstPassed = false;
 		for (var propName : listOPropNames) {
-			settingBuilder.append(firstPassed ? " and " : "").append(propName).append("=? ");
+			settingBuilder.append(firstPassed ? " , " : "").append(propName).append("=? ");
+			whereClause.append(firstPassed ? " and " : "").append(propName).append("=? ");
 			firstPassed = true;
 		}
 		updateBuilder.append(settingBuilder);
@@ -100,7 +102,7 @@ public class SqlTableWrapper<T extends ObjectId> {
 		// crafting the specific query so that we can find a contact in the database
 		// with the name email etc..
 		selectSpecificTemplate = String.format("SELECT %s FROM %s WHERE %s;", propNames, getTableName(),
-				settingBuilder.toString());
+				whereClause);
 
 		// crafting the template so that we can count indexes in a table.
 		countTemplate = String.format("SELECT COUNT(id) FROM %s;", getTableName());
